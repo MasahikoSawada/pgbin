@@ -1,0 +1,1 @@
+CREATE OR REPLACE FUNCTION generate_string(int, int) RETURNS text AS $$ SELECT array_to_string(ARRAY(SELECT chr((97 + random() * 10) :: integer) FROM generate_series(1,($1 + random()*$2)::int)), ''); $$ LANGUAGE sql;
