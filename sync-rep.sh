@@ -53,7 +53,7 @@ wal_log_hints = on
 EOF
 
 cat <<EOF >> ${HBA_MASTER}
-local   replication     masahiko                                trust
+local   replication     sawadamsd                                trust
 EOF
 
 bin/pg_ctl start -D ${DATA_MASTER} -w > /dev/null
