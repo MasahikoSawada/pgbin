@@ -7,8 +7,8 @@ PGDATABASE=postgres
 
 ##### Basically don't touch below area!! ####
 # Base enviroment variables
-BIN=${PGHOME}/bin
-PGDATA=${PGHOME}
+PGBIN=${PGHOME}/bin
+PGDATA=${PGHOME}/data
 
 # command path
-PSQL="${BIN}/psql -p ${PGPORT} -d ${PGDATABASE}"
+PSQL="${PGBIN}/psql -p ${PGPORT} -d ${PGDATABASE}"

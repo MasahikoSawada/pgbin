@@ -1,16 +1,9 @@
 #!/bin/sh
 
-source ${PGBINPATH}/common.sh
+. pgbin/common.sh
+. pgbin/sync_rep_function.sh
 
-PORT_MASTER=5555
-DATA_MASTER="master_data"
-DATA_STANDBY="standby_data"
-
-PSQL_MASTER="${PSQL} -d postgres -p ${PORT_MASTER}"
-PSQL_STANDBY="${PSQL} -d postgres -p ${PORT_STANDBY}"
-
-CONF_MASTER=${DATA_MASTER}/postgresql.conf
-HBA_MASTER=${DATA_MASTER}/pg_hba.conf
+show_enviornment
 
 # check argument
 if [ "$#" -ne 1 ];then
@@ -18,70 +11,62 @@ if [ "$#" -ne 1 ];then
     exit 1
 fi
 NUM_STANDBY=$1
+info "bulding 1 master server and $NUM_STANDBY standby(s)"
 
 # clean up
-if [ -e "${DATA_MASTER}/postmaster.pid" ]; then
-    bin/pg_ctl stop -D ${DATA_MASTER} -mi > /dev/null
-    echo "[  M  ] : master stopped"
-fi
-rm -rf ${DATA_MASTER}
+info "stop all servers"
+manage stop slave
+manage stop master
 
-for DIR in `ls -1 | egrep "${DATA_STANDBY}[0-9]"`
-do
-    if [ -e "${DIR}/postmaster.pid" ]; then
-	bin/pg_ctl stop -w -D ${DIR} -mi > /dev/null
-	echo "[  S  ] : standby stopped"
-    fi
-    echo "        :     ${DIR}"
-    rm -rf ${DIR}
-done
-
-echo "[M , S] : all database cluster removed"
+info "clean up all servers"
+cleanup
 
 # initialize both server
-bin/initdb -D ${DATA_MASTER} -E UTF8 --no-locale > /dev/null
-echo "[  M  ] : initdb done"
+info "initializing master server"
+$PGBIN/initdb -D ${DATA_MASTER} -E UTF8 --no-locale > /dev/null
 
 # set up the master
 cat <<EOF >> ${CONF_MASTER}
 port = ${PORT_MASTER}
 wal_level = hot_standby
-max_wal_senders = 50
+max_wal_senders = 5
 wal_keep_segments = 10
 max_wal_size = 128MB
 wal_log_hints = on
+wal_sender_timeout = 0
+wal_receiver_timeout = 0
 EOF
 
 cat <<EOF >> ${HBA_MASTER}
-local   replication     sawadamsd                                trust
+local   replication     masahiko                                trust
 EOF
 
-bin/pg_ctl start -D ${DATA_MASTER} -w > /dev/null
-echo "[  M  ] : master started"
+info "lanch master server"
+manage start master
 
 # set up the standby
+info "initializing standby server(s)"
 for num in `seq 1 ${NUM_STANDBY}`
 do
-    DIR=${DATA_STANDBY}${num}
-    CONF_STANDBY=${DIR}/postgresql.conf
-    RECOV_STANDBY=${DIR}/recovery.conf
-    PORT_STANDBY=`expr 5555 + $num`
+    PGDATA_STANDBY=$PGHOME/$DATA_STANDBY${num}
+    CONF_STANDBY=${PGDATA_STANDBY}/postgresql.conf
+    RECOV_STANDBY=${PGDATA_STANDBY}/recovery.conf
+    PORT_STANDBY=`expr $PORT_MASTER + $num`
 
-    bin/pg_basebackup -P -p ${PORT_MASTER} -D ${DIR} -x
+    $PGBIN/pg_basebackup -P -p ${PORT_MASTER} -D ${PGDATA_STANDBY} -x
 
     cat <<EOF >> ${CONF_STANDBY}
-hot_standby = on
 port = ${PORT_STANDBY}
 EOF
 
     cat <<EOF >> ${RECOV_STANDBY}
 standby_mode = on
-primary_conninfo = 'port=${PORT_MASTER}'
+primary_conninfo = 'port=${PORT_MASTER} application_name=$DATA_STANDBY$num'
 EOF
-
-    bin/pg_ctl start -D ${DIR} -w > /dev/null
-    echo "[S : ${num}] : standby started"
 done
+
+info "lanch all standby server(s)"
+manage start slave
 
 exit 0
 
