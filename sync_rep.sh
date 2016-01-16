@@ -35,6 +35,8 @@ max_wal_size = 128MB
 wal_log_hints = on
 wal_sender_timeout = 0
 wal_receiver_timeout = 0
+synchronous_replication_method = 'priority'
+synchronous_standby_names = '2, node1, node2, node3'
 EOF
 
 cat <<EOF >> ${HBA_MASTER}
