@@ -61,6 +61,22 @@ PPRIMARY="$PGBIN/psql -d postgres -p $PORT_PRIMARY"
 
 $PPRIMARY -c "create extension postgres_fdw"
 $PPRIMARY -c "create table p(col int)"
+$PPRIMARY -c "
+CREATE FUNCTION p_tri() RETURNS TRIGGER AS
+\$\$
+DECLARE
+part text;
+tmp text;
+BEGIN
+tmp := new.col / 100 + 1;
+part := 's' || tmp;
+EXECUTE 'INSERT INTO ' || part || ' VALUES((\$1).*)' USING new;
+RETURN NULL;
+END;
+\$\$
+LANGUAGE plpgsql;
+"
+$PPRIMARY -c "create trigger insert_tri before insert on p for each row execute procedure p_tri()"
 
 for num in `seq 1 $NUM_SHARD`
 do
@@ -76,5 +92,6 @@ do
 
     $PSHARD -c "create extension postgres_fdw;"
     $PSHARD -c "create table s${num} (col int)"
-    $PSHARD -c "insert into s${num} select generate_series($MIN, $MAX -1)"
+    $PSHARD -c "create index s_idx on s${num} (col);"
 done
+$PPRIMARY -c "insert into p select generate_series(0, $MAX - 1)"
