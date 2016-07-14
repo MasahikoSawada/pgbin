@@ -3,16 +3,23 @@
 . pgbin/common.sh
 . pgbin/xc_function.sh
 
+
 show_environment
 
 # check argument
-if [ "$#" -ne 2 ]; then
+if [ "$#" -ne 2 -r "$#" -ne 4 ]; then
     echo "# of argument should be 2"
     exit 1
 fi
 
 NUM_COOR=$1
 NUM_DATA=$2
+
+if [ "$3" == "manage" -a "$4" != "" ]; then
+    action=$4
+    manage $action
+    exit
+fi
 
 info "building 1 parent server and $NUM_SHARD shard"
 
