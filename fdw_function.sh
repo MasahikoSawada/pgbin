@@ -1,7 +1,7 @@
 PORT_PRIMARY=4440
 
 DATA_PRIMARY="pri"
-DATA_SHARD="shard"
+DATA_SHARD="shd"
 
 PSQL_PRIMARY="$PSQL -d postgre -p $PORT_PRIMARY"
 CONF_PRIMARY=${DATA_PRIMARY}/postgresql.conf
