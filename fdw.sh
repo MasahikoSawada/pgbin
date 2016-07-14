@@ -6,12 +6,18 @@
 show_environment
 
 # check argument
-if [ "$#" -ne 1 ]; then
+if [ "$#" -ne 1 -a "$#" -ne 2 ]; then
     echo "# of argument should be 1"
     exit 1
 fi
 
 NUM_SHARD=$1
+
+if [ "$2" != "" ];then
+    action=$2
+    manage $action
+    exit
+fi
 
 info "building 1 parent server and $NUM_SHARD shard"
 
@@ -26,6 +32,7 @@ info "Initialize primary server"
 $PGBIN/initdb -D $DATA_PRIMARY -E UTF8 --no-locale > /dev/null
 
 cat <<EOF >> ${CONF_PRIMARY}
+shared_preload_libraries = 'postgres_fdw'
 port = ${PORT_PRIMARY}
 log_line_prefix = '%p'
 wal_level = logical
@@ -44,6 +51,7 @@ do
 
     cat <<EOF >> ${CONF_SHARD}
 port = ${PORT_SHARD}
+shared_preload_libraries = 'postgres_fdw'
 log_line_prefix = '%p'
 wal_level = logical
 max_wal_senders = 5
