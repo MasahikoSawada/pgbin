@@ -1,0 +1,20 @@
+backend_flush_after = 0
+bgwriter_delay = 50ms                 # 10-10000ms between rounds
+#bgwriter_lru_maxpages = 100            # 0-1000 max buffers written/round
+bgwriter_flush_after = 800kB
+@@@
+backend_flush_after = 0
+bgwriter_delay = 20ms                 # 10-10000ms between rounds
+#bgwriter_lru_maxpages = 100            # 0-1000 max buffers written/round
+bgwriter_flush_after = 64kB
+@@@
+backend_flush_after = 0
+#bgwriter_delay = 200ms
+bgwriter_lru_maxpages = 1000            # 0-1000 max buffers written/round
+bgwriter_flush_after = 64kB
+@@@
+backend_flush_after = 0
+#bgwriter_delay = 50ms
+bgwriter_lru_maxpages = 1000            # 0-1000 max buffers written/round
+bgwriter_flush_after = 64kB
+@@@
